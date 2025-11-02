@@ -281,8 +281,62 @@ export function TabStrip(
 		s.tabs = s.tabs;
 	};
 
+	let transparentOverlay = (
+		<div style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999"></div>
+	);
+
 	return (
-		<div this={use(this.container)}>
+		<div
+			this={use(this.container)}
+			on:pointerdown={(evt: PointerEvent) => {
+				if (evt.target !== cx.root) return;
+				parent.focus();
+				frameElement.style.display = "none";
+
+				parent.document.addEventListener("pointerup", (evt: PointerEvent) => {
+					frameElement.style.display = "";
+				});
+				// setTimeout(() => {
+				// 	frameElement.style.display = "";
+				// }, 0);
+				anurainstance.deactivateFrames();
+				parent.focus();
+
+				let frameOffset = frameElement.getBoundingClientRect();
+				let clickX = evt.clientX + frameOffset.left;
+				let clickY = evt.clientY + frameOffset.top;
+
+				if (
+					parent.anura.platform.type !== "mobile" &&
+					parent.anura.platform.type !== "tablet"
+				) {
+					anurainstance.dragging = true;
+					anurainstance.originalLeft = anurainstance.element.offsetLeft;
+					anurainstance.originalTop = anurainstance.element.offsetTop;
+					anurainstance.mouseLeft =
+						anurainstance.element.offsetLeft + evt.pageX;
+					anurainstance.mouseTop = anurainstance.element.offsetTop + evt.pageY;
+				}
+			}}
+			on:pointerup={(evt: PointerEvent) => {
+				// reactivateFrames();
+				frameElement.style.display = "";
+
+				if (anurainstance.dragging) {
+					anurainstance.handleDrag(evt);
+					anurainstance.dragging = false;
+				}
+			}}
+			on:dblclick={() => {
+				anurainstance.maximize();
+			}}
+			on:pointermove={(evt: PointerEvent) => {
+				// do the dragging during the mouse move
+				// if (anurainstance.dragging) {
+				// 	anurainstance.handleDrag(evt);
+				// }
+			}}
+		>
 			<div class="extra left" this={use(this.leftEl)}></div>
 			{use(this.visualtabs).mapEach((tab) => tab.root)}
 			<div
