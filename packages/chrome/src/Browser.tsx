@@ -173,14 +173,44 @@ export class Browser extends StatefulClass {
 			},
 		});
 
-		const streamnull = new WritableStream<Uint8Array>({
-			write() {},
+		let chunks: Uint8Array[] = [];
+		const streamcollect = new WritableStream<Uint8Array>({
+			write(chunk) {
+				chunks.push(chunk);
+			},
+			async close() {
+				const totalLength = chunks.reduce(
+					(acc, chunk) => acc + chunk.byteLength,
+					0
+				);
+				const result = new Uint8Array(totalLength);
+				let offset = 0;
+				for (const chunk of chunks) {
+					result.set(chunk, offset);
+					offset += chunk.byteLength;
+				}
+			},
 		});
 
 		try {
 			await download.body
 				.pipeThrough(pausableProgress)
-				.pipeTo(streamnull, { signal: ac.signal });
+				.pipeTo(streamcollect, { signal: ac.signal });
+
+			let combined = new Uint8Array();
+			const totalLength = chunks.reduce(
+				(acc, chunk) => acc + chunk.byteLength,
+				0
+			);
+			combined = new parent.Uint8Array(totalLength);
+			let offset = 0;
+			for (const chunk of chunks) {
+				combined.set(chunk, offset);
+				offset += chunk.byteLength;
+			}
+
+			console.log(combined);
+			await parent.anura.fs.writeFile(`/downloads/${filename}`, combined);
 		} catch (err) {
 			if ((err as any)?.name !== "AbortError") throw err;
 		}
