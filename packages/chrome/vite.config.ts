@@ -5,6 +5,7 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 import { cssHmrPlugin, devSsr, jsxPlugin } from "dreamland/vite";
 
 export default defineConfig({
+	base: "./",
 	plugins: [
 		process.env.VITE_SINGLEFILE ? viteSingleFile() : null,
 		cssHmrPlugin(),

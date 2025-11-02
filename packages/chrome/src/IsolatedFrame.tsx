@@ -550,6 +550,8 @@ const methods = {
 			transfer = [fetchresponse.body];
 		}
 
+		fetchresponse.headers["Cross-Origin-Resource-Policy"] = "cross-origin";
+		fetchresponse.headers["Cross-Origin-Embedder-Policy"] = "require-corp";
 		return [fetchresponse, transfer];
 	},
 };

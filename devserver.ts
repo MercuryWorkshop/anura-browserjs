@@ -265,6 +265,8 @@ const staticServer = http.createServer((req, res) => {
 			const mimeType = getMimeType(filePath);
 			res.statusCode = 200;
 			res.setHeader("Content-Type", mimeType);
+			res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+			res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 			if (method === "HEAD") {
 				res.end();
 				return;
