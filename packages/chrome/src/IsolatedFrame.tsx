@@ -50,6 +50,7 @@ import { createMenu } from "./components/Menu";
 const ISOLATION_ORIGIN = import.meta.env.VITE_ISOLATION_ORIGIN;
 
 import LibcurlClient from "@mercuryworkshop/libcurl-transport";
+import { AnuraBareClient } from "./AnuraClient";
 
 const cfg = {
 	wisp: import.meta.env.VITE_WISP_URL,
@@ -229,11 +230,8 @@ setInterface({
 		return str;
 	},
 });
-export const bare = new BareClient(
-	new LibcurlClient({
-		wisp: cfg.wisp,
-	})
-);
+
+export const bare = new BareClient(new AnuraBareClient());
 
 type Controller = {
 	controllerframe: HTMLIFrameElement;
@@ -545,7 +543,9 @@ const methods = {
 		let transfer: any[] | undefined = undefined;
 		if (
 			fetchresponse.body instanceof ArrayBuffer ||
-			fetchresponse.body instanceof ReadableStream
+			fetchresponse.body instanceof ReadableStream ||
+			fetchresponse.body instanceof parent.ReadableStream ||
+			fetchresponse.body instanceof parent.ArrayBuffer
 		) {
 			transfer = [fetchresponse.body];
 		}
