@@ -138,7 +138,7 @@ export class Tab extends StatefulClass {
 	// only caller should be history.ts for this
 	_directnavigate(url: URL) {
 		this.url = url;
-		this.icon = "/defaultfavicon.png";
+		this.icon = "./defaultfavicon.png";
 		if (url.protocol == INTERNAL_URL_PROTOCOL) {
 			this.icon = null;
 			this.history.current().favicon = "/icon.png";

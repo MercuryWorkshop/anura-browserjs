@@ -8,7 +8,7 @@ import { Button } from "@components/Button";
 import { Input } from "@components/Input";
 import { AVAILABLE_SEARCH_ENGINES } from "@components/Omnibar/suggestions";
 import { THEMES } from "../themes";
-
+import { INTERNAL_URL_PROTOCOL } from "../consts";
 import {
 	iconSettings,
 	iconSearchOutline as iconSearch,
@@ -33,7 +33,9 @@ export function SettingsPage(
 				on:click={() => {
 					this.selected = id;
 					// this.tab.url = new URL(`puter://settings/${id}`);
-					this.tab.history.push(new URL(`puter://settings/${id}`));
+					this.tab.history.push(
+						new URL(`${INTERNAL_URL_PROTOCOL}//settings/${id}`)
+					);
 				}}
 			>
 				<Icon icon={icon} />

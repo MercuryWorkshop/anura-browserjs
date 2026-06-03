@@ -393,6 +393,7 @@ export function createFetchHandler(controller: Controller) {
 	};
 
 	const fetchHandler = new ScramjetFetchHandler({
+		crossOriginIsolated,
 		transport: transport,
 		context: {
 			interface: {

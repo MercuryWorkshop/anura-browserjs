@@ -78,10 +78,13 @@ export class Controller {
 				let transfer: Transferable[] = [];
 				if (
 					response.body instanceof ArrayBuffer ||
-					response.body instanceof ReadableStream
+					response.body instanceof ReadableStream ||
+					response.body instanceof top.ArrayBuffer ||
+					response.body instanceof top.ReadableStream
 				) {
 					transfer = [response.body];
 				}
+
 				return [response, transfer];
 			} catch (e: any) {
 				console.error("Error in controller fetch:", e);
@@ -244,7 +247,7 @@ async function registerLocalControllerSW(): Promise<ServiceWorkerRegistration> {
 
 	swRegistrationPromise = (async () => {
 		const registration = await navigator.serviceWorker.register(
-			"/localcontrollersw.js",
+			"/browser/localcontrollersw.js",
 			{
 				scope: basePrefix,
 			}
@@ -314,11 +317,13 @@ export async function controllerForURL(url: URL): Promise<Controller> {
 			return nonIsolatedController;
 		}
 
-		const registration = await registerLocalControllerSW();
-
 		let controllerId = makeId();
 		let prefix = new URL(location.origin + basePrefix + controllerId + "/");
-		controller = new Controller(prefix, controllerId, registration.active!);
+		controller = new Controller(
+			prefix,
+			controllerId,
+			navigator.serviceWorker.controller!
+		);
 
 		nonIsolatedController = controller;
 	}
