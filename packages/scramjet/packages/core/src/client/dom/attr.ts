@@ -73,14 +73,18 @@ export default function (client: ScramjetClient) {
 
 	client.Trap(["Attr.prototype.value", "Attr.prototype.nodeValue"], {
 		get(ctx) {
+			// eslint-disable-next-line scramjet-core/no-poisoned-ctx-value
 			if (ctx.this?.ownerElement) {
+				// eslint-disable-next-line scramjet-core/no-poisoned-ctx-value
 				return ctx.this.ownerElement.getAttribute(ctx.this.name);
 			}
 
 			return ctx.get();
 		},
 		set(ctx, value) {
+			// eslint-disable-next-line scramjet-core/no-poisoned-ctx-value
 			if (ctx.this?.ownerElement) {
+				// eslint-disable-next-line scramjet-core/no-poisoned-ctx-value
 				return ctx.this.ownerElement.setAttribute(ctx.this.name, value);
 			}
 

@@ -2,7 +2,6 @@ import { iswindow } from "@client/entry";
 import { SCRAMJETCLIENT } from "@/symbols";
 import { ScramjetClient } from "@client/index";
 // import { argdbg } from "@client/shared/err";
-import { indirectEval } from "@client/shared/eval";
 import { Object_defineProperty } from "@/shared/snapshot";
 
 export function createWrapFn(client: ScramjetClient, self: GlobalThis) {
@@ -23,7 +22,7 @@ export function createWrapFn(client: ScramjetClient, self: GlobalThis) {
 		}
 		// instead of returning top, we need to return the uppermost parent that's inside a scramjet context
 		let current = self;
-		for (; ;) {
+		for (;;) {
 			const test = current.parent.self;
 			if (test === current) break; // there is no parent, actual or emulated.
 
@@ -40,13 +39,10 @@ export function createWrapFn(client: ScramjetClient, self: GlobalThis) {
 		wrappedTop = current;
 	}
 
-	return function(identifier: any, strict: boolean) {
+	return function (identifier: any) {
 		if (identifier === self.location) return client.locationProxy;
 		if (identifier === self.eval) {
-			// TODO: make this per-client, don't regen every time
-			const bound = indirectEval.bind(client, strict);
-			client.box.unproxy.set(bound, self.eval);
-			return bound;
+			return client.indirectEval;
 		}
 		if (iswindow) {
 			if (identifier === self.parent) {
@@ -60,7 +56,7 @@ export function createWrapFn(client: ScramjetClient, self: GlobalThis) {
 }
 
 export const order = 4;
-export default function(client: ScramjetClient, self: GlobalThis) {
+export default function (client: ScramjetClient, self: GlobalThis) {
 	Object_defineProperty(self, client.config.globals.wrapfn, {
 		value: client.wrapfn,
 		writable: false,
@@ -68,7 +64,7 @@ export default function(client: ScramjetClient, self: GlobalThis) {
 		enumerable: false,
 	});
 	Object_defineProperty(self, client.config.globals.wrappropertyfn, {
-		value: function(str) {
+		value: function (str) {
 			if (
 				str === "location" ||
 				str === "parent" ||
@@ -84,7 +80,7 @@ export default function(client: ScramjetClient, self: GlobalThis) {
 		enumerable: false,
 	});
 	Object_defineProperty(self, client.config.globals.cleanrestfn, {
-		value: function(obj) {
+		value: function (obj) {
 			// TODO
 		},
 		writable: false,
@@ -96,7 +92,7 @@ export default function(client: ScramjetClient, self: GlobalThis) {
 		self.Object.prototype,
 		client.config.globals.wrappropertybase + "location",
 		{
-			get: function() {
+			get: function () {
 				// if (this.location.constructor.toString().includes("Location")) {
 
 				if (this === self || this === self.document) {
@@ -121,7 +117,7 @@ export default function(client: ScramjetClient, self: GlobalThis) {
 		self.Object.prototype,
 		client.config.globals.wrappropertybase + "parent",
 		{
-			get: function() {
+			get: function () {
 				return client.wrapfn(this.parent, false);
 			},
 			set(value: any) {
@@ -136,7 +132,7 @@ export default function(client: ScramjetClient, self: GlobalThis) {
 		self.Object.prototype,
 		client.config.globals.wrappropertybase + "top",
 		{
-			get: function() {
+			get: function () {
 				return client.wrapfn(this.top, false);
 			},
 			set(value: any) {
@@ -150,7 +146,7 @@ export default function(client: ScramjetClient, self: GlobalThis) {
 		self.Object.prototype,
 		client.config.globals.wrappropertybase + "eval",
 		{
-			get: function() {
+			get: function () {
 				return client.wrapfn(this.eval, true);
 			},
 			set(value: any) {
@@ -161,7 +157,7 @@ export default function(client: ScramjetClient, self: GlobalThis) {
 		}
 	);
 
-	self.$scramitize = function(v) {
+	self.$scramitize = function (v) {
 		const t = typeof v;
 		if (t === "object" && v !== null) {
 			if (v === location) debugger;
@@ -183,12 +179,9 @@ export default function(client: ScramjetClient, self: GlobalThis) {
 	// it has to be a discrete function because there's always the possibility that "location" is a local variable
 	// we have to use an IIFE to avoid duplicating side-effects in the getter
 	Object_defineProperty(self, client.config.globals.trysetfn, {
-		value: function(lhs: any, op: string, rhs: any) {
-			// TODO: not cross frame safe
-			if (lhs instanceof self.Location) {
-				// @ts-ignore
-				client.locationProxy.href = rhs;
-
+		value: function (lhs: any, op: string, rhs: any) {
+			if (client.box.locations.has(lhs)) {
+				lhs.href = rhs;
 				return true;
 			}
 

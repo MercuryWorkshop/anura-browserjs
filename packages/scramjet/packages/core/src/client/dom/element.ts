@@ -183,6 +183,14 @@ export default function (client: ScramjetClient, self: typeof window) {
 		}
 	}
 
+	client.Trap("HTMLImageElement.prototype.currentSrc", {
+		get(ctx) {
+			const currentSrc = ctx.get() as string;
+			if (!currentSrc) return currentSrc;
+			return unrewriteUrl(currentSrc, client.context);
+		},
+	});
+
 	// note that href is not here
 	const urlprops = [
 		"protocol",
@@ -382,14 +390,9 @@ export default function (client: ScramjetClient, self: typeof window) {
 	client.Proxy("Element.prototype.removeAttribute", {
 		apply(ctx) {
 			const name = String(ctx.args[0]);
-			if (name.startsWith("scramjet-attr"))
-				return ctx.return(undefined);
+			if (name.startsWith("scramjet-attr")) return ctx.return(undefined);
 			if (
-				client.natives.call(
-					"Element.prototype.hasAttribute",
-					ctx.this,
-					name
-				)
+				client.natives.call("Element.prototype.hasAttribute", ctx.this, name)
 			) {
 				ctx.fn.call(ctx.this, `scramjet-attr-${ctx.args[0]}`);
 			}
@@ -399,14 +402,9 @@ export default function (client: ScramjetClient, self: typeof window) {
 	client.Proxy("Element.prototype.toggleAttribute", {
 		apply(ctx) {
 			const name = String(ctx.args[0]);
-			if (name.startsWith("scramjet-attr"))
-				return ctx.return(false);
+			if (name.startsWith("scramjet-attr")) return ctx.return(false);
 			if (
-				client.natives.call(
-					"Element.prototype.hasAttribute",
-					ctx.this,
-					name
-				)
+				client.natives.call("Element.prototype.hasAttribute", ctx.this, name)
 			) {
 				ctx.fn.call(ctx.this, `scramjet-attr-${ctx.args[0]}`);
 			}
@@ -534,6 +532,21 @@ export default function (client: ScramjetClient, self: typeof window) {
 	client.Trap(
 		["Node.prototype.textContent", "HTMLScriptElement.prototype.textContent"],
 		{
+			set(ctx, value) {
+				const text = String(value);
+				return ctx.set(rewriteTextForElement(ctx.this, text));
+			},
+			get(ctx) {
+				return getTextForElement(ctx.this, ctx.get());
+			},
+		}
+	);
+	client.Trap(
+		[
+			"HTMLElement.prototype.innerText",
+			"HTMLScriptElement.prototype.innerText",
+		],
+		{
 			set(ctx, value: string) {
 				const text = String(value);
 				return ctx.set(rewriteTextForElement(ctx.this, text));
@@ -543,15 +556,6 @@ export default function (client: ScramjetClient, self: typeof window) {
 			},
 		}
 	);
-	client.Trap("HTMLElement.prototype.innerText", {
-		set(ctx, value: string) {
-			const text = String(value);
-			return ctx.set(rewriteTextForElement(ctx.this, text));
-		},
-		get(ctx) {
-			return getTextForElement(ctx.this, ctx.get());
-		},
-	});
 
 	client.Trap("Element.prototype.outerHTML", {
 		set(ctx, value: string) {
@@ -577,7 +581,7 @@ export default function (client: ScramjetClient, self: typeof window) {
 			ctx.args[0] = rewriteHtml(html, client.context, client.meta, {
 				loadScripts: false,
 				inline: true,
-				source: client.url.href, 
+				source: client.url.href,
 				apisource: "set Element.prototype.setHTMLUnsafe",
 				foreignContext: foreignContextForElement(client, ctx.this),
 			});
@@ -645,42 +649,60 @@ export default function (client: ScramjetClient, self: typeof window) {
 	});
 	client.Proxy("Text.prototype.appendData", {
 		apply(ctx) {
-			if (ctx.this.parentElement?.tagName === "STYLE") {
-				ctx.args[0] = rewriteCss(ctx.args[0], client.context, client.meta);
-			}
+			const text = String(ctx.args[0]);
+			const parent = client.natives.call(
+				"Node.prototype.parentElement",
+				ctx.this
+			);
+			ctx.args[0] = rewriteTextForElement(parent, text);
 		},
 	});
 
 	client.Proxy("Text.prototype.insertData", {
 		apply(ctx) {
-			if (ctx.this.parentElement?.tagName === "STYLE") {
-				ctx.args[1] = rewriteCss(ctx.args[1], client.context, client.meta);
-			}
+			const text = String(ctx.args[1]);
+			const parent = client.natives.call(
+				"Node.prototype.parentElement",
+				ctx.this
+			);
+			ctx.args[1] = rewriteTextForElement(parent, text);
 		},
 	});
 
 	client.Proxy("Text.prototype.replaceData", {
 		apply(ctx) {
-			if (ctx.this.parentElement?.tagName === "STYLE") {
-				ctx.args[2] = rewriteCss(ctx.args[2], client.context, client.meta);
-			}
+			const text = String(ctx.args[2]);
+			const parent = client.natives.call(
+				"Node.prototype.parentElement",
+				ctx.this
+			);
+			ctx.args[2] = rewriteTextForElement(parent, text);
 		},
 	});
 
 	client.Trap("Text.prototype.wholeText", {
 		get(ctx) {
-			if (ctx.this.parentElement?.tagName === "STYLE") {
-				return unrewriteCss(ctx.get() as string, client.context);
-			}
-
-			return ctx.get();
+			const parent = client.natives.call(
+				"Node.prototype.parentElement",
+				ctx.this
+			);
+			return getTextForElement(parent, ctx.get());
 		},
 		set(ctx, v) {
-			if (ctx.this.parentElement?.tagName === "STYLE") {
-				return ctx.set(rewriteCss(v as string, client.context, client.meta));
-			}
+			const text = String(v);
+			const parent = client.natives.call(
+				"Node.prototype.parentElement",
+				ctx.this
+			);
+			return ctx.set(rewriteTextForElement(parent, text));
+		},
+	});
 
-			return ctx.set(v);
+	client.Proxy("HTMLAnchorElement.prototype.toString", {
+		apply(ctx) {
+			const href = ctx.call();
+			if (!href) return href;
+			return ctx.return(unrewriteUrl(href, client.context));
 		},
 	});
 

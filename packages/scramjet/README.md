@@ -18,11 +18,14 @@ Scramjet allows you to sandbox arbitrary web content, bypass CORS restrictions o
 
 Some of the popular websites that Scramjet supports include:
 
-- [Google](https://google.com) (partial)
+- [Google](https://google.com)
 - [Youtube](https://youtube.com)
-- [Spotify](https://spotify.com) (partial)
-- [Discord](https://discord.com)
+- [Instagram](https://instagram.com)
+- [ChatGPT](https://chatgpt.com)
 - [Reddit](https://reddit.com)
+- [Twitter](https://twitter.com)
+- [Discord](https://discord.com)
+- [Spotify](https://spotify.com)
 - [GeForce NOW](https://play.geforcenow.com/)
 - [now.gg](https://now.gg)
 
@@ -40,12 +43,13 @@ Some of the popular websites that Scramjet supports include:
 
 - Clone the repository with `git clone --recursive https://github.com/MercuryWorkshop/scramjet`
 - Install the dependencies with `pnpm i`
+- Change directories with `cd packages/core`
 - Build the rewriter with `pnpm rewriter:build`
 - Build Scramjet with `pnpm build`
 
 ### Running Scramjet Locally
 
-You can run the Scramjet dev server with the command
+You can run the Scramjet dev server when running this command at the root
 
 ```sh
 pnpm dev
