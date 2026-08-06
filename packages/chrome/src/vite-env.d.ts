@@ -6,6 +6,7 @@ interface ImportMetaEnv {
 	readonly VITE_SENTRY_URL: string;
 	readonly VITE_ISOLATION_ORIGIN: string;
 	readonly VITE_WISP_URL: string;
+	readonly VITE_PUTER_WISP_PROMOTION: string;
 }
 
 interface ImportMeta {
@@ -13,3 +14,7 @@ interface ImportMeta {
 }
 
 declare const puter: any;
+
+/** Inlined by vite.config.ts's `define`. */
+declare const __COPYRIGHT_YEAR__: number;
+declare const __DEFAULT_SETTINGS__: import("./services/SettingsService").Settings;

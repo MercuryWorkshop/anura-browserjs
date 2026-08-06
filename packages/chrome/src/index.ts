@@ -20,8 +20,9 @@ import { mount } from "./App.tsx";
 
 export const isPuter =
 	import.meta.env.VITE_PUTER_BRANDING && puter.env == "app";
+export const needSignIn = isPuter && !import.meta.env.VITE_PUTER_WISP_PROMOTION;
 export const puterBranding = import.meta.env.VITE_PUTER_BRANDING;
-export const STORAGE_VERSION = 2;
+export const STORAGE_VERSION = 3;
 
 export let profileService: ProfileService;
 export let settingsService: SettingsService;
@@ -30,15 +31,23 @@ export let downloadsService: DownloadsService;
 export let faviconService: FaviconService;
 
 if (import.meta.env.VITE_PUTER_BRANDING) {
-	if (!puter.auth.isSignedIn()) {
+	if (needSignIn && !puter.auth.isSignedIn()) {
 		await puter.auth.signIn();
 	}
 
-	let wisp = await puter.net.generateWispV1URL();
-	setWispUrl(wisp);
+	if (needSignIn) {
+		const wisp = await puter.net.generateWispV1URL();
+		setWispUrl(wisp);
+	} else {
+		setWispUrl(await fetch("https://sensible-ship-8305.puter.work/").then(r => r.text()));
+	}
 } else {
 	setWispUrl(import.meta.env.VITE_WISP_URL);
 }
+
+const loc = new URL(location.href);
+export const anonPeerToken = loc.searchParams.get("peerToken");
+export const openUrl = loc.searchParams.get("openUrl");
 
 await loadServices();
 
@@ -86,7 +95,7 @@ function registerSave(service: Service, kv: KVWrapper, key: string) {
 
 async function loadServices() {
 	await navigator.locks.request("write", async () => {
-		let kv = new KVWrapper(puterBranding ? "puter" : "localstorage");
+		let kv = new KVWrapper((puterBranding && needSignIn) ? "puter" : "localstorage");
 		let version;
 		let skipLoad = false;
 		if (await kv.has("version")) {
@@ -110,8 +119,9 @@ async function loadServices() {
 			}
 		}
 		await kv.set("version", STORAGE_VERSION);
-
-		settingsService = new SettingsService(await kv.get("settings"));
+		settingsService = new SettingsService(
+			skipLoad ? null : await kv.get("settings")
+		);
 		registerSave(settingsService, kv, "settings");
 		faviconService = new FaviconService(await kv.get("faviconCache"));
 		registerSave(faviconService, kv, "faviconCache");
